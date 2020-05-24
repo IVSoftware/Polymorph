@@ -12,25 +12,20 @@ namespace Polymorph
     {
         static void Main(string[] args)
         {
+            DataTable dt = ConvertToDataTable(GetData("foobar"));
 
-            foreach (var someFoo in GetData("foobar"))
+            foreach (DataColumn column in dt.Columns)
             {
-                // Display the name of the type
-                Console.WriteLine(someFoo.GetType().Name);
-
-                // Explanation: By casting with the 'as' operator
-                // you will get an object if the type matches and
-                // a null if it doesn't. 
-                FooA fooA = someFoo as FooA;
-                FooB fooB = someFoo as FooB;
-
-                // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-                // On the other hand, you could also cast
-                // like this but it will throw an exception 
-                // if the cast fails. Sometimes you want that 
-                // behavior but most times you don't.
-
-                // FooA fooA = (FooA)someFoo; // if (someFoo is FooB) then exception is thrown.
+                Console.Write(column.ColumnName + "\t");
+            }
+            Console.WriteLine();
+            foreach (DataRow row in dt.Rows)
+            {
+                foreach (DataColumn column in dt.Columns)
+                {
+                    Console.Write(row[column.ColumnName] + "\t");
+                }
+                Console.WriteLine();
             }
             var table = ConvertToDataTable<IFoo>(GetData("foobar"));
             // Pause
@@ -42,27 +37,50 @@ namespace Polymorph
         }
         private static DataTable ConvertToDataTable<T>(IEnumerable<T> data)
         {
-            // problem is typeof(T) is always IFoo - not FooBar
             PropertyInfo[] properties = typeof(T).GetProperties();
 
             DataTable table = new DataTable();
             foreach (var prop in properties)
             {
-                table.Columns.Add(prop.Name, prop.PropertyType);
+                table.Columns.Add(prop.Name, prop.PropertyType).DataType = prop.PropertyType;
+            }
+            foreach (var item in data)
+            {
+                object[] values = properties.Select(property => property.GetValue(item)).ToArray();
+                table.Rows.Add(values);
             }
             return table;
         }
     }
-    class FooA : IFoo 
+    class FooA : IFoo
     {
-        public string StringValue { get; set; } = "I am FooA";
+        public int ID { get; } = 1;
+        public string StringValue
+        {
+            get => Calc();
+        }          
+
+        string Calc()
+        {
+            return "I am FooA";
+        }
     }
-    class FooB : IFoo 
+    class FooB : IFoo
     {
-        public string StringValue { get; set; } = "I am FooA";
+        public int ID { get; } = 2;
+        public string StringValue
+        {
+            get => Calc();
+        }
+
+        string Calc()
+        {
+            return "I am FooB";
+        }
     }
-    internal interface IFoo 
+    internal interface IFoo
     {
-       string StringValue { get; }
+        int ID { get; }
+        string StringValue { get; } 
     }
 }
