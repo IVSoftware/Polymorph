@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,6 +17,7 @@ namespace Polymorph
             {
                 // Display the name of the type
                 Console.WriteLine(someFoo.GetType().Name);
+
                 // Explanation: By casting with the 'as' operator
                 // you will get an object if the type matches and
                 // a null if it doesn't. 
@@ -29,7 +32,7 @@ namespace Polymorph
 
                 // FooA fooA = (FooA)someFoo; // if (someFoo is FooB) then exception is thrown.
             }
-
+            var table = ConvertToDataTable<IFoo>(GetData("foobar"));
             // Pause
             Console.ReadKey();
         }
@@ -37,8 +40,29 @@ namespace Polymorph
         {
             return new List<IFoo> { new FooA(), new FooB() };
         }
+        private static DataTable ConvertToDataTable<T>(IEnumerable<T> data)
+        {
+            // problem is typeof(T) is always IFoo - not FooBar
+            PropertyInfo[] properties = typeof(T).GetProperties();
+
+            DataTable table = new DataTable();
+            foreach (var prop in properties)
+            {
+                table.Columns.Add(prop.Name, prop.PropertyType);
+            }
+            return table;
+        }
     }
-    class FooA : IFoo { }
-    class FooB : IFoo { }
-    internal interface IFoo { }
+    class FooA : IFoo 
+    {
+        public string StringValue { get; set; } = "I am FooA";
+    }
+    class FooB : IFoo 
+    {
+        public string StringValue { get; set; } = "I am FooA";
+    }
+    internal interface IFoo 
+    {
+       string StringValue { get; }
+    }
 }
